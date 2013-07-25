@@ -16,6 +16,8 @@
 @optional
 - (BOOL)shouldRecieveEvent:(OVBridgeWebView *)webView;
 - (void)webView:(OVBridgeWebView *)webView didRecieveEvent:(OVBridgeEvent *)event;
+- (BOOL)webViewShouldHandlerLoadEvent:(OVBridgeWebView *)webView;
+- (void)webViewDidHandleLoadEvent:(OVBridgeWebView *)webView;
 - (BOOL)webView:(OVBridgeWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType;
 - (void)webViewDidStartLoad:(OVBridgeWebView *)webView;
 - (void)webViewDidFinishLoad:(OVBridgeWebView *)webView;
@@ -28,6 +30,6 @@
 @property (nonatomic, weak) id<OVBridgeWebViewDelegate> bridgeDelegate;
 
 - (void)registerEvent:(NSInteger)eventId label:(NSString *)eventLabel sender:(NSString *)senderId;
-- (void)registerLoadEvent:(NSString *)eventId label:(NSString *)eventLabel;
+- (void)registerLoadEvent;
 
 @end

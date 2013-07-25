@@ -11,8 +11,8 @@
 #import "OVBridgeEvent.h"
 #import "JSONKit.h"
 
-#define WINDOW_ON_LOAD_SENDER_ID @"window_on_load_sender"
-#define WINDOW_ON_LOAD_EVENT_ID @"window_on_load_id"
+#define WINDOW_ON_LOAD_EVENT_ID 1000
+#define WINDOW_ON_LOAD_SENDER_ID @"window_on_load_id"
 #define WINDOW_ON_LOAD_EVENT_LABEL @"window_on_load_label"
 
 @interface OVBridgeWebView () <UIWebViewDelegate>
@@ -30,7 +30,7 @@
 {
     self = [super initWithFrame:frame];
     if (self) {
-        self.delegate = self;
+        [self initialize];
     }
     return self;
 }
@@ -38,9 +38,13 @@
 - (id)init {
     self = [super init];
     if (self) {
-        self.delegate = self;
+        [self initialize];
     }
     return self;
+}
+
+- (void)initialize {
+    self.delegate = self;
 }
 
 - (void)registerEvent:(NSInteger)eventId label:(NSString *)eventLabel sender:(NSString *)senderId {
@@ -49,14 +53,8 @@
     }
     NSDictionary *eventDic = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:eventId], @"eventId", eventLabel, @"eventLabel", nil];
     [[self.eventMap objectForKey:senderId] addObject:eventDic];
-}
-
-- (void)registerLoadEvent:(NSString *)eventId label:(NSString *)eventLabel {
-    if (![self.eventMap objectForKey:WINDOW_ON_LOAD_SENDER_ID]) {
-        [self.eventMap setObject:[NSMutableArray array] forKey:WINDOW_ON_LOAD_SENDER_ID];
-    }
-    NSDictionary *eventDic = [NSDictionary dictionaryWithObjectsAndKeys:WINDOW_ON_LOAD_EVENT_ID, @"eventId", WINDOW_ON_LOAD_EVENT_LABEL, @"eventLabel", nil];
-    [[self.eventMap objectForKey:WINDOW_ON_LOAD_SENDER_ID] addObject:eventDic];
+    
+    [self configureEventHandlerBySenderId:senderId];
 }
 
 - (NSMutableDictionary *)eventMap {
@@ -66,31 +64,35 @@
     return _eventMap;
 }
 
-- (void)configureScript {
-    NSMutableString *script = [NSMutableString string];
+- (void)configureEventHandler {
     for (NSString *key in self.eventMap.allKeys) {
-        [script appendString:[self fitTemplateBySenderId:key]];
+        [self configureEventHandlerBySenderId:key];
     }
-    [self stringByEvaluatingJavaScriptFromString:script];
 }
 
-- (NSString *)fitTemplateBySenderId:(NSString *)senderId {
+- (void)configureEventHandlerBySenderId:(NSString *)senderId {
     NSString *protocolBody = [NSString stringWithFormat:@"{\"senderId\":\"%@\", \"commandInfo\":%@}", senderId, [[self.eventMap objectForKey:senderId] JSONString]];
     NSString *commandFuncName = [NSString stringWithFormat:@"%@_ov_command", senderId];
     NSString *jsCommand = [NSString stringWithFormat:
-                          @"document.getElementById('%@').removeEventListener('click', %@, false);"
+                           @"var %@ = document.getElementById('%@');"
+                           "if(%@) {"
+                           "%@.removeEventListener('click', %@, false);"
                            "var %@ = function(){"
                            "var url='ovbridge://%@';"
                            "document.location = url;"
                            "};"
-                           "document.getElementById('%@').addEventListener('click', %@, false);",
+                           "%@.addEventListener('click', %@, false);"
+                           "}",
+                           senderId,
+                           senderId,
+                           senderId,
                            senderId,
                            commandFuncName,
                            commandFuncName,
                            protocolBody,
                            senderId,
                            commandFuncName];
-    return jsCommand;
+    [self stringByEvaluatingJavaScriptFromString:jsCommand];
 }
 
 #pragma mark - UIWebViewDelegate
@@ -139,14 +141,15 @@
         [self.bridgeDelegate webViewDidFinishLoad:self];
     }
     
-    NSMutableString *scriptStr = [NSString stringWithFormat:@"function sendCommand(cmd,param){"
-                                  "var url=\"ovbridge://\"+cmd+\":\"+param;"
-                                  "url = encodeURI(url);"
-                                  "document.location = url;"
-                                  "}"];
-    [self stringByEvaluatingJavaScriptFromString:scriptStr];
+    if (self.bridgeDelegate) {
+        if ([self.bridgeDelegate webViewShouldHandlerLoadEvent:self]) {
+            if ([self.bridgeDelegate respondsToSelector:@selector(webViewDidHandleLoadEvent:)]) {
+                [self.bridgeDelegate webViewDidHandleLoadEvent:self];
+            }
+        }
+    }
     
-    [self configureScript];
+    [self configureEventHandler];
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
