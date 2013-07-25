@@ -30,6 +30,5 @@
 @property (nonatomic, weak) id<OVBridgeWebViewDelegate> bridgeDelegate;
 
 - (void)registerEvent:(NSInteger)eventId label:(NSString *)eventLabel sender:(NSString *)senderId;
-- (void)registerLoadEvent;
 
 @end
