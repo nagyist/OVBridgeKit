@@ -9,21 +9,23 @@ The mechanism is based on Event Lister. At first you have to register a control,
 
 For example, if you register a event type with eventId 1000 to a button by calling: 
 
+```ObjectiveC 
 // register the sender for the event with eventId
 // param: eventId     ---------- ID of the event
 // param: eventLabel  ---------- Some description for the Event
 // param: senderId    ---------- The dom Id of the control for register
 - (void)registerEvent:(NSInteger)eventId label:(NSString *)eventLabel sender:(NSString *)senderId;
+```
 
 Then when the button is clicked, a event with eventId 1000 will be sent to native and invoke the function: 
 
+```ObjectiveC 
 // callback function for handling the triggered event
 // param: webView     ---------- The web view just to load the web page
 // param: event       ---------- The come-back event being caught
 - (void)webView:(OVBridgeWebView *)webView didRecieveEvent:(OVBridgeEvent *)event;
+```
 
-where you can implement the callback logic...
+where you can implement the callback process.
 
-Illustration above just clarify the rough process of the event-listener mechanism. There are some more important function being statemented in the protocol OVBridgeWebViewDelegate...
-
-Anyway, let's start with demo...
+What was said above just clarify the rough process of the event-listener mechanism. There are some more important function being statemented in the protocol OVBridgeWebViewDelegate. Please refer to the Demo Project and enjoy the beauty of coding.
